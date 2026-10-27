@@ -2,6 +2,7 @@
 """Build clean, staged, ad-hoc signed helpers with stable notification identities."""
 from pathlib import Path
 import json
+import platform
 import plistlib
 import shutil
 import subprocess
@@ -20,6 +21,11 @@ DISPLAY_NAME = 'Herdr'
 
 
 ACTOOL = '/Applications/Xcode.app/Contents/Developer/usr/bin/actool'
+# Match LSMinimumSystemVersion below. Without an explicit target swiftc builds for
+# whatever its environment implies (a herdr plugin install produced macOS 28.0,
+# which macOS 27 refuses to launch: kLSIncompatibleSystemVersionErr).
+MIN_MACOS = '13.0'
+SWIFT_TARGET = ('-target', platform.machine() + '-apple-macos' + MIN_MACOS)
 
 
 def compile_asset_icon(iconset, catalog, resources):
@@ -63,10 +69,10 @@ def build(root=None, output=None):
     with tempfile.TemporaryDirectory(prefix='.herdr-build-', dir=output) as temporary:
         stage = Path(temporary)
         executable = stage / 'Helper'
-        subprocess.run(['swiftc', '-swift-version', '5', '-O', str(root / 'Helper.swift'),
+        subprocess.run(['swiftc', *SWIFT_TARGET, '-swift-version', '5', '-O', str(root / 'Helper.swift'),
                         '-o', str(executable)], check=True)
         renderer = stage / 'Icon'
-        subprocess.run(['swiftc', '-swift-version', '5', '-O', str(root / 'Icon.swift'),
+        subprocess.run(['swiftc', *SWIFT_TARGET, '-swift-version', '5', '-O', str(root / 'Icon.swift'),
                         '-o', str(renderer)], check=True)
         for kind, name in APPS:
             app = stage / (name + '.app')
@@ -88,7 +94,7 @@ def build(root=None, output=None):
                 'CFBundleName': DISPLAY_NAME, 'CFBundleDisplayName': DISPLAY_NAME,
                 'CFBundleExecutable': 'Helper', 'CFBundlePackageType': 'APPL',
                 'CFBundleVersion': '5', 'CFBundleShortVersionString': '0.5.0',
-                'LSUIElement': True, 'LSMinimumSystemVersion': '13.0',
+                'LSUIElement': True, 'LSMinimumSystemVersion': MIN_MACOS,
                 'HerdrNotificationKind': kind, 'CFBundleIconFile': 'AppIcon', 'CFBundleIconName': 'AppIcon',
                 'NSAppleEventsUsageDescription': 'Focus the Ghostty terminal containing the selected Herdr agent.',
             }
