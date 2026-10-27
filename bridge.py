@@ -21,8 +21,9 @@ CONFIG = Path.home() / '.config/herdr/plugins/config/herdr-native-notify/config.
 LOCAL_SOCKET = str(Path.home() / '.config/herdr/herdr.sock')
 
 # Cross-machine click navigation (see navigate()). The key must be bound as an
-# extra keys.next_agent binding in Herdr's config. Ghostty 1.3.1's scripted
-# `send key` only encodes function keys, so it has to stay a function key.
+# extra keys.next_agent binding in Herdr's config. A function key with every
+# modifier collides with nothing (Ghostty before 1.4 could only send function
+# keys by script; 1.4 sends any key, but a reserved key is still the point).
 NAV_SOURCE = 'herdr-native-notify'
 NAV_TOKEN = 'native_notify_target'
 NAV_KEY = ('f12', 'control,option,shift')
@@ -130,28 +131,68 @@ def front_herdr_title():
     return title if title.startswith(HERDR_TITLE) else None
 
 
-def herdr_surface():
-    """A Ghostty terminal showing Herdr: the focused one if it does, else the first."""
+def herdr_client_ttys():
+    """Terminal devices (`ttys000`) running a local Herdr client; servers have none."""
     try:
-        surface = ghostty_surface()
-        if ghostty_title(surface).startswith(HERDR_TITLE):
-            return surface
+        listing = subprocess.run(['/bin/ps', '-axo', 'tty=,comm='], check=True, capture_output=True,
+                                 text=True, timeout=10).stdout
     except (subprocess.SubprocessError, OSError):
-        pass
+        return set()
+    ttys = set()
+    for line in listing.splitlines():
+        tty, _, command = line.strip().partition(' ')
+        if tty not in ('', '??', '-') and Path(command.strip()).name == 'herdr':
+            ttys.add(Path(tty).name)
+    return ttys
+
+
+def ghostty_terminals():
+    """(id, tty, title) for every Ghostty terminal; tty is '' before Ghostty 1.4."""
+    # Inside the tell block `tab` means Ghostty's tab class, so name the separators first.
     script = '''set out to ""
+    set sep to ASCII character 9
+    set nl to ASCII character 10
     tell application "Ghostty"
         repeat with t in terminals
-            set out to out & (id of t) & tab & (name of t) & linefeed
+            set device to ""
+            try
+                set device to tty of t
+            end try
+            set out to out & (id of t) & sep & device & sep & (name of t) & nl
         end repeat
     end tell
     return out'''
     listing = subprocess.run(['/usr/bin/osascript', '-e', script], check=True, capture_output=True,
                              text=True, timeout=10).stdout
+    rows = []
     for line in listing.splitlines():
-        surface, _, title = line.partition('\t')
-        if title.startswith(HERDR_TITLE):
-            return surface
-    return None
+        surface, _, rest = line.partition('\t')
+        device, _, title = rest.partition('\t')
+        if not surface.strip():
+            continue
+        rows.append((surface, Path(device.strip()).name if device.strip() else '', title))
+    return rows
+
+
+def herdr_surface():
+    """A Ghostty terminal showing Herdr: the focused one if it does, else the first.
+
+    Ghostty 1.4 reports each terminal's tty, so the terminal running the local
+    Herdr client is found directly; the `herdr ` title prefix is the fallback
+    (Ghostty 1.3, or a title not rendered yet).
+    """
+    try:
+        focused = ghostty_surface()
+    except (subprocess.SubprocessError, OSError):
+        focused = None
+    terminals = ghostty_terminals()
+    clients = herdr_client_ttys()
+    by_tty = [surface for surface, tty, _ in terminals if tty and tty in clients]
+    by_title = [surface for surface, _, title in terminals if title.startswith(HERDR_TITLE)]
+    for candidates in (by_tty, by_title):
+        if focused in candidates:
+            return focused
+    return (by_tty or by_title or [None])[0]
 
 
 def showing(binding, space=None):

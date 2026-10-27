@@ -152,7 +152,8 @@ while Herdr reconnects. A machine with a live dedicated `connect` window (below)
 is left to that window, so alerts are never duplicated.
 
 Clicking brings a Ghostty terminal showing Herdr forward (the focused one if it
-shows Herdr, else the first titled `herdr …`) after checking
+shows Herdr, else the first running the local Herdr client, matched by tty on
+Ghostty 1.4+, else the first titled `herdr …`) after checking
 the agent still occupies its pane, then lands on the exact machine and pane,
 whichever machine the window was showing. Local alerts behave the same way when
 the window shows a saved machine.
@@ -175,7 +176,8 @@ through 0.9.5 or on master (herdr discussion #4396, open). The click therefore:
 
 Requirements: `ctrl+alt+shift+f12` in `keys.next_agent` (dotfiles adds it), a
 `ui.window_title` containing `{hostname}`, and Ghostty's AppleScript enabled.
-Ghostty 1.3.1's scripted `send key` encodes only function keys, hence F12. While
+The key is a reserved one that nothing else binds (Ghostty before 1.4 could only
+script function keys). While
 the click runs (about 2 s), every client of the narrowed server briefly shows
 just the target in its Agents list. Each server tracks its own focus, so a remote
 agent focused on its server is treated as visible while a Herdr window showing

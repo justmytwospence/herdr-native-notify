@@ -16,6 +16,32 @@ def agent(status='blocked', seq=1):
                 completion_seq=seq if status in ('idle', 'done') else None, focused=False)
 
 
+class SurfaceTests(unittest.TestCase):
+    def lookup(self, focused, terminals, ttys):
+        with patch.object(b, 'ghostty_surface', return_value=focused), \
+                patch.object(b, 'ghostty_terminals', return_value=terminals), \
+                patch.object(b, 'herdr_client_ttys', return_value=ttys):
+            return b.herdr_surface()
+
+    def test_tty_beats_title(self):
+        terminals = [('A', 'ttys001', 'herdr lookalike'), ('B', 'ttys000', 'untitled')]
+        self.assertEqual(self.lookup('Z', terminals, {'ttys000'}), 'B')
+
+    def test_focused_herdr_terminal_wins(self):
+        terminals = [('A', 'ttys000', 'herdr mac: x'), ('B', 'ttys002', 'herdr NUC: y')]
+        self.assertEqual(self.lookup('B', terminals, {'ttys000', 'ttys002'}), 'B')
+
+    def test_title_fallback_without_tty(self):
+        terminals = [('A', '', 'zsh'), ('B', '', 'herdr mac: x')]
+        self.assertEqual(self.lookup('A', terminals, {'ttys000'}), 'B')
+        self.assertIsNone(self.lookup('A', [('A', '', 'zsh')], set()))
+
+    def test_client_ttys_skip_servers(self):
+        listing = '?? herdr\nttys000 herdr\nttys003 /opt/homebrew/bin/herdr\nttys001 -zsh\n'
+        with patch.object(b.subprocess, 'run', return_value=b.subprocess.CompletedProcess([], 0, listing, '')):
+            self.assertEqual(b.herdr_client_ttys(), {'ttys000', 'ttys003'})
+
+
 class BridgeTests(unittest.TestCase):
     def test_helper_recovers_disconnect_during_restart(self):
         with patch.object(b, 'rpc', side_effect=[ConnectionError('restart'), {'ok': True}]) as rpc, patch.object(b.subprocess, 'run') as launch:
