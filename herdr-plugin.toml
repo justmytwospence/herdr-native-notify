@@ -1,0 +1,74 @@
+id = "herdr-native-notify"
+name = "Herdr Native Notify"
+version = "0.1.0"
+min_herdr_version = "0.9.3"
+description = "Native blocked and timed finished notifications with exact Ghostty navigation."
+platforms = ["macos"]
+
+# `herdr plugin install` builds the signed helper app and installs it into
+# ~/Applications/Herdr Native Notify (updating an existing install in place, so
+# its notification permission and Persistent style carry over). `plugin link`
+# runs no build steps: build and install by hand when developing.
+[[build]]
+command = ["/usr/bin/python3", "build.py"]
+
+[[build]]
+command = ["/usr/bin/python3", "install.py", "--ensure"]
+
+[[actions]]
+id = "bind"
+title = "Activate native notifications for this session"
+command = ["/usr/bin/python3", "bridge.py", "activate"]
+
+[[actions]]
+id = "test-blocked"
+title = "Test persistent native notification"
+command = ["/usr/bin/python3", "bridge.py", "test-blocked"]
+
+[[actions]]
+id = "test-done"
+title = "Test timed finished notification"
+command = ["/usr/bin/python3", "bridge.py", "test-done"]
+
+[[actions]]
+id = "settings"
+title = "Native notifications: finished duration"
+command = ["herdr", "plugin", "pane", "open", "--plugin", "herdr-native-notify", "--entrypoint", "settings", "--placement", "overlay"]
+
+[[actions]]
+id = "connect-remote"
+title = "Native notifications: connect remote"
+command = ["herdr", "plugin", "pane", "open", "--plugin", "herdr-native-notify", "--entrypoint", "remote", "--placement", "overlay"]
+
+[[actions]]
+id = "status"
+title = "Native notifications: status"
+command = ["/usr/bin/python3", "bridge.py", "status"]
+
+[[panes]]
+id = "settings"
+title = "Native notification settings"
+placement = "overlay"
+command = ["/usr/bin/python3", "bridge.py", "configure"]
+
+[[panes]]
+id = "remote"
+title = "Connect remote with native notifications"
+placement = "overlay"
+command = ["/usr/bin/python3", "bridge.py", "connect"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["/usr/bin/python3", "bridge.py", "event"]
+
+[[events]]
+on = "pane.closed"
+command = ["/usr/bin/python3", "bridge.py", "event"]
+
+[[events]]
+on = "pane.agent_detected"
+command = ["/usr/bin/python3", "bridge.py", "event"]
+
+[[events]]
+on = "pane.moved"
+command = ["/usr/bin/python3", "bridge.py", "event"]
