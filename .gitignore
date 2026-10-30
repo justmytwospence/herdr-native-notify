@@ -1,3 +1,7 @@
 build/
 __pycache__/
 *.pyc
+
+# Machine-local approvals; shared harness policy belongs in Git.
+.claude/settings.local.json
+.pi/tool-gate.local.json

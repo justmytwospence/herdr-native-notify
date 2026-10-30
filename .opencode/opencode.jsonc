@@ -1,0 +1,14 @@
+{
+  "permission": {
+    "external_directory": {
+      "{env:HOME}/Projects/pi-plugins/**": "allow",
+      "{env:HOME}/Projects/dotfiles/**": "allow"
+    },
+    "edit": {
+      "*": "allow",
+      "{env:HOME}/Projects/pi-plugins/**": "ask",
+      "{env:HOME}/Projects/dotfiles/**": "allow",
+      "{env:HOME}/Projects/herdr-native-notify/**": "allow"
+    }
+  }
+}

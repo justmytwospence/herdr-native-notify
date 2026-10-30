@@ -1,0 +1,11 @@
+default_permissions = "project"
+
+[permissions.project]
+extends = "self"
+
+[permissions.project.workspace_roots]
+"~/Projects/dotfiles" = true
+
+[permissions.project.filesystem]
+"~/Projects/dotfiles" = "write"
+"~/Projects/pi-plugins" = "read"

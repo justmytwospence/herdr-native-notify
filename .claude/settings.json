@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/Projects/pi-plugins/**)",
+      "Read(~/Projects/dotfiles/**)"
+    ],
+    "additionalDirectories": [
+      "~/Projects/dotfiles"
+    ]
+  },
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": [
+        "~/Projects/dotfiles"
+      ]
+    }
+  }
+}
